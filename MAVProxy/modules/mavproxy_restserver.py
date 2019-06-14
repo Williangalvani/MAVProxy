@@ -15,24 +15,16 @@ from flask import Flask
 from werkzeug.serving import make_server
 from MAVProxy.modules.lib import mp_module
 
-def mavlink_to_json(msg):
-    '''Translate mavlink python messages in json string'''
-    ret = '\"%s\": {' % msg._type
-    for fieldname in msg._fieldnames:
-        data = getattr(msg, fieldname)
-        ret += '\"%s\" : \"%s\", ' % (fieldname, data)
-    ret = ret[0:-2] + '}'
-    return ret
+def mavlink_to_dict(msg):
+    '''Assemble message as a dict'''
+    data = {fieldname: getattr(msg, fieldname) for fieldname in msg._fieldnames}
+    return data
 
 def mpstatus_to_json(status):
     '''Translate MPStatus in json string'''
     msg_keys = list(status.msgs.keys())
-    data = '{'
-    for key in msg_keys[:-1]:
-        data += mavlink_to_json(status.msgs[key]) + ','
-    data += mavlink_to_json(status.msgs[msg_keys[-1]])
-    data += '}'
-    return data
+    data = {key: mavlink_to_dict(status.msgs[key]) for key in msg_keys}
+    return json.dumps(data, default=lambda o: '<not serializable>')
 
 class RestServer():
     '''Rest Server'''
